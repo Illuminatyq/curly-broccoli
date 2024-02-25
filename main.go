@@ -318,6 +318,7 @@ func main() {
 	}
 
 	legionEmojis := []string{"🇱", "🇪", "🇬", "🇮", "🇴", "🇳"}
+	covenEmojis := []string"{"c", "o", "v", "e", "🇳"}
 
 	session.Identify.Intents = discordgo.IntentsGuildMessages
 
@@ -376,6 +377,15 @@ func main() {
 				}
 			}
 		}
+		
+		if strings.Contains(strings.ToLower(m.Content), "ковен", "сестры") {
+			for _, v := range covenEmojis {
+				err := s.MessageReactionAdd(m.ChannelID, m.ID, v)
+				time.Sleep(100 * time.Millisecond)
+				if err != nil {
+					fmt.Println("error reacting to message,", err)
+				}
+			}
 
 		// Checking on spasibo message
 		if strings.Contains(strings.ToLower(m.Content), "спасибо") {
