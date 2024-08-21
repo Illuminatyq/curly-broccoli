@@ -124,63 +124,121 @@ func buildRaceMessage(raceTrack map[string]int, raceParticipants map[string]stri
 func handleBeerCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
 	args := strings.Split(m.Content, " ")
 	if len(args) != 2 {
-		s.ChannelMessageSend(m.ChannelID, "Использование: !пиво <число от 1 до 20>")
+		s.ChannelMessageSend(m.ChannelID, "Использование: !пиво <число от 1 до 40>")
 		return
 	}
 
 	amount, err := strconv.Atoi(args[1])
-	if err != nil || amount < 1 || amount > 20 {
-		s.ChannelMessageSend(m.ChannelID, "Пожалуйста, введите число от 1 до 20.")
+	if err != nil || amount < 1 || amount > 40 {
+		s.ChannelMessageSend(m.ChannelID, "Пожалуйста, введите число от 1 до 40.")
 		return
 	}
 
-	successChance := 100 - (amount * 5)
-	if successChance < 5 {
-		successChance = 5
+	chance := 100 - (amount * 3)
+	roll := rand.Intn(100) + 1
+
+	successMessages := []string{
+		fmt.Sprintf("<@%s> смог осилить %d литров пива! 🍺", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> успешно справился с %d литрами! Это достойно уважения! 🍻", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> выпил %d литров, пивной монстр на свободе! 🍻🦹", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> залпом поглотил %d литров и выглядит, как чемпион! 🏆", m.Author.ID, amount),
 	}
 
-	roll := rand.IntN(100) + 1
+	failureMessages := []string{
+		fmt.Sprintf("<@%s> не смог осилить %d литров пива и облевал весь пол! Кто это убирать будет?! 🤢🤮", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> попытался выпить %d литров, но потерпел неудачу и свалился под стол! 😵", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> проиграл борьбу с %d литрами пива и отправляется в бан на %d минут! 😴", m.Author.ID, amount, getMuteDuration(amount)),
+		fmt.Sprintf("<@%s> взял на себя слишком много! %d литров пива оказались выше его сил! 🥴", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> был слишком уверен в себе и перепил. %d литров — не шутка! 🤢", m.Author.ID, amount),
+		fmt.Sprintf("<@%s> свалился под весом %d литров пива и отправляется в тайм-аут! 😵", m.Author.ID, amount),
+	}
 
-	if roll <= successChance {
-		var successMessage string
-		if amount == 20 {
-			successMessage = fmt.Sprintf("<@%s> выпил %d литров пива и остался жив?! 🎉🍻\n\n", m.Author.ID, amount)
-			s.ChannelMessageSend(m.ChannelID, successMessage)
-			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExejN4bjU1cTc1NDRodXU1OGd1NTExNTZheXRwOTdkaHNycWwyMTdtZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qiSGGu0d2Dgac/giphy.gif")
-		} else {
-			successMessage = fmt.Sprintf("<@%s> успешно выпил %d литров пива! 🍺\n\n", m.Author.ID, amount)
-			s.ChannelMessageSend(m.ChannelID, successMessage)
+	gifs := []string{
+		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHA1ZmQ2OWxlZGtnZWs2MjFlZXV3aGZzczhvdXM5b3B5NGhkdThjMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lTGLOH7ml3poQ6JoFg/giphy.gif",
+		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ2Fmbzh1a2h2eGMzb2VrMnd0a2xjZTR0N2RtMDJwZjMzNDI0ZW5tYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SS7BbrR0YJ3R6/giphy.gif",
+		"https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3FzNzJ6eWwxZjFsemtwMjVwcnNzZGltcmVxMGN3NGExYjhjaG5peiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MitgpqoNTeC2c/giphy.gif",
+	}
+
+	if roll <= chance {
+		successMessage := successMessages[rand.Intn(len(successMessages))]
+		s.ChannelMessageSend(m.ChannelID, successMessage)
+
+		if amount == 40 {
+			s.ChannelMessageSend(m.ChannelID, "Невероятно! 40 литров! Ты, наверное, из пивного королевства! 🍻👑")
 		}
+
+		if rand.Intn(100) < 50 { // 50% шанс показать GIF
+			gif := gifs[rand.Intn(len(gifs))]
+			s.ChannelMessageSend(m.ChannelID, gif)
+		}
+
 	} else {
-		var failureMessage string
-		if amount == 20 {
-			failureMessage = fmt.Sprintf("<@%s> не смог осилить %d литров пива и отправляется в бессознательное состояние на 5 минут! 🍺😴\n\n", m.Author.ID, amount)
-			s.ChannelMessageSend(m.ChannelID, failureMessage)
-			s.ChannelMessageSend(m.ChannelID, "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3Rqb3NycG0xZTRqNHZoamgybmVmOGRvYTcyamViNGJ6ZGM0YjA1MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7bx7ZHokGnofm/giphy-downsized-large.gif")
-			timeoutUntil := time.Now().Add(5 * time.Minute)
-			err = s.GuildMemberTimeout(m.GuildID, m.Author.ID, &timeoutUntil)
+		failureMessage := failureMessages[rand.Intn(len(failureMessages))]
+		muteDuration := getMuteDuration(amount)
+		muteUntil := time.Now().Add(muteDuration)
+
+		member, err := s.GuildMember(m.GuildID, m.Author.ID)
+		if err != nil {
+			fmt.Println("Error fetching member:", err)
+			return
+		}
+
+		adminRoleID := "" // ID роли администратора
+		for _, roleID := range member.Roles {
+			role, err := s.State.Role(m.GuildID, roleID)
 			if err != nil {
-				fmt.Println("Error muting member:", err)
+				continue
+			}
+			if role.Permissions&discordgo.PermissionAdministrator != 0 {
+				adminRoleID = roleID
+				break
+			}
+		}
+
+		if adminRoleID != "" {
+			// Удаляем роль администратора
+			err := s.GuildMemberRoleRemove(m.GuildID, m.Author.ID, adminRoleID)
+			if err != nil {
+				fmt.Println("Error removing admin role:", err)
 				return
 			}
-		} else if amount >= 15 {
-			failureMessage = fmt.Sprintf("<@%s> не осилил %d литров пива. Похоже, ты не подготовился к настоящей пьянке. Спокойной ночи на 5 минут! 🍺😴\n\n", m.Author.ID, amount)
-			s.ChannelMessageSend(m.ChannelID, failureMessage)
-		} else if amount >= 10 {
-			failureMessage = fmt.Sprintf("<@%s> не смог выпить %d литров пива. Немного больше тренировки и получится! Мут на 5 минут! 🍻😴\n\n", m.Author.ID, amount)
-			s.ChannelMessageSend(m.ChannelID, failureMessage)
-		} else {
-			failureMessage = fmt.Sprintf("<@%s> не справился с %d литрами пива. Надо больше тренироваться! Мут на 5 минут. 🍺😴\n\n", m.Author.ID, amount)
-			s.ChannelMessageSend(m.ChannelID, failureMessage)
 		}
 
-		muteDuration := 5 * time.Minute
-		muteUntil := time.Now().Add(muteDuration)
-		err := s.GuildMemberTimeout(m.GuildID, m.Author.ID, &muteUntil)
+		err = s.GuildMemberTimeout(m.GuildID, m.Author.ID, &muteUntil)
 		if err != nil {
 			fmt.Println("Error muting member:", err)
 			return
 		}
+
+		s.ChannelMessageSend(m.ChannelID, failureMessage)
+
+		if rand.Intn(100) < 50 { // 50% шанс показать GIF
+			gif := gifs[rand.Intn(len(gifs))]
+			s.ChannelMessageSend(m.ChannelID, gif)
+		}
+
+		if adminRoleID != "" {
+			// Возвращаем роль администратора после окончания тайм-аута
+			time.AfterFunc(muteDuration, func() {
+				err := s.GuildMemberRoleAdd(m.GuildID, m.Author.ID, adminRoleID)
+				if err != nil {
+					fmt.Println("Error restoring admin role:", err)
+				}
+			})
+		}
+	}
+}
+
+func getMuteDuration(amount int) time.Duration {
+	switch {
+	case amount >= 30:
+		return time.Duration(amount*2) * time.Minute
+	case amount >= 20:
+		return time.Duration(amount*1.5) * time.Minute
+	case amount >= 10:
+		return time.Duration(amount) * time.Minute
+	default:
+		return time.Duration(amount*0.5) * time.Minute
 	}
 }
 
@@ -448,7 +506,7 @@ func main() {
 			}
 		}
 
-		if strings.HasPrefix(m.Content, "!гонка") {
+		if strings.EqualFold(m.Content, "!гонка") {
 			handleRaceCommand(s, m)
 		} else if strings.HasPrefix(m.Content, "!го") {
 			handleJoinRaceCommand(s, m)
